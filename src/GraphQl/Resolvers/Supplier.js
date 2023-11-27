@@ -12,38 +12,34 @@ import { v4 as uuidv4 } from "uuid";
  * @returns {Promise<Supplier[]>} Suppliers
  */
 const suppliers = async (_, { filter = {}, count = false }, { session }) => {
-  let query = { isRemove: false };
-  if (filter) {
-    const { search } = filter;
-    for (let data in filter) {
-      if (Object.hasOwnProperty.call(filter, data)) {
-        let element = filter[data];
-        if (data === "search") {
-          const like = { $regex: search, $options: "i" };
-          data = "$or";
-          element = [{ name: like }];
-        }
-        query[data] = element;
-      }
-    }
-  }
   try {
-    if (session?.rol && session?.rol === "ADMIN") {
-      let supplier = Supplier.aggregate([]).match(query);
-      if (count) {
-        supplier.count("totalSuppliers");
-        return (await supplier.exec())[0]?.totalSuppliers ?? 0;
+    let query = { isRemove: false };
+    if (filter) {
+      const { search } = filter;
+      for (let data in filter) {
+        if (Object.hasOwnProperty.call(filter, data)) {
+          let element = filter[data];
+          if (data === "search") {
+            const like = { $regex: search, $options: "i" };
+            data = "$or";
+            element = [{ name: like }];
+          }
+          query[data] = element;
+        }
       }
-      return await supplier;
-    } else {
-      throw new Error("No esta autorizado para ver los productos");
     }
+    let supplier = Supplier.aggregate([]).match(query);
+    if (count) {
+      supplier.count("totalSuppliers");
+      return (await supplier.exec())[0]?.totalSuppliers ?? 0;
+    }
+    return await supplier;
   } catch (error) {
     throw new Error(error);
   }
 };
 /**
- * 
+ *
  * @param {*} _ Parent
  * @param {SecondParamFilterSupplier} param1 Filter and Count
  * @param {ThirdParamSession} param2 Session
@@ -59,7 +55,7 @@ const supplierCount = async (_, { filter = {} }, { session }) => {
 };
 //----------------------------------MUTATIONS
 /**
- * 
+ *
  * @param {*} _ Parent
  * @param {SecondParamSaveSupplier} param1 Data
  * @param {Session} session Session
@@ -68,27 +64,23 @@ const supplierCount = async (_, { filter = {} }, { session }) => {
 const supplierCreate = async (_, { data }, session) => {
   const { name, phone, nit, manager } = data;
   try {
-    if (session?.rol && session?.rol === "ADMIN") {
-      const existingSupplier = await Supplier.findOne({ name });
-      if (existingSupplier) throw new Error("Ya existe un tag con este nombre");
-      const newSupplier = new Supplier({
-        _id: uuidv4(),
-        name,
-        phone,
-        nit,
-        manager,
-      });
-      
-      return await newSupplier.save();
-    } else {
-      return false;
-    }
+    const existingSupplier = await Supplier.findOne({ name });
+    if (existingSupplier) throw new Error("Ya existe un tag con este nombre");
+    const newSupplier = new Supplier({
+      _id: uuidv4(),
+      name,
+      phone,
+      nit,
+      manager,
+    });
+
+    return await newSupplier.save();
   } catch (error) {
     return Promise.reject(error);
   }
 };
 /**
- * 
+ *
  * @param {*} _ Parent
  * @param {SecondParamSaveSupplier} param1 Data
  * @param {Session} session Session
@@ -97,23 +89,19 @@ const supplierCreate = async (_, { data }, session) => {
 const supplierUpdate = async (_, { data }, session) => {
   try {
     const { _id, name, phone, nit, manager } = data;
-    if (session?.rol && session?.rol === "ADMIN") {
-      const update = { $set: {} };
-      if (name) update.$set.name = name;
-      if (phone) update.$set.phone = phone;
-      if (nit) update.$set.nit = nit;
-      if (manager) update.$set.manager = manager;
+    const update = { $set: {} };
+    if (name) update.$set.name = name;
+    if (phone) update.$set.phone = phone;
+    if (nit) update.$set.nit = nit;
+    if (manager) update.$set.manager = manager;
 
-      return await Supplier.findOneAndUpdate({ _id }, update);
-    } else {
-      return false;
-    }
+    return await Supplier.findOneAndUpdate({ _id }, update);
   } catch (error) {
     return error;
   }
 };
 /**
- * 
+ *
  * @param {*} _ Parent
  * @param {SecondParamSaveSupplier} param1 Data
  * @param {ThirdParamSession} session Session
@@ -128,12 +116,12 @@ const supplierSave = async (_, { data }, { session }) => {
   return await options[option](_, { data }, session);
 };
 /**
- * 
+ *
  * @param {*} _ Parent
- * @param {SecondParamDelete} param1 
- * @returns {Promise<boolean>}  
+ * @param {SecondParamDelete} param1
+ * @returns {Promise<boolean>}
  */
-const supplierDelete = async(_, { _id }) => {
+const supplierDelete = async (_, { _id }) => {
   try {
     const supplier = await Supplier.findOne({ _id, isRemove: false });
     if (!supplier) throw new Error("SUPPLIER_NOT_FOUND");
