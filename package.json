@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/index.js",
+    "start": "node ./src/index.js",
     "docs": "npx jsdoc -c jsdoc.json"
   },
   "author": "Camilo Carmona",
