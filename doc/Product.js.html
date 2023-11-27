@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Product.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Product.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import Product from "../../Models/Product.js";
+import { v4 as uuidv4 } from "uuid";
+import GraphQLUpload from "graphql-upload/GraphQLUpload.mjs";
+import { tagResolver } from "./Tag.js";
+import { Image_Save } from "../../../config/imageSave.js";
+//----------------------------------QUERIES
+//@ts-check
+/**
+ * SecondParamFilters
+ * @typedef {Object} SecondParamFilters
+ * @property {Filter} filter Filters
+ * @property {boolean} count Count
+ * 
+ */
+/**
+ * tagFilterObject
+ * @typedef {Object} tagFilterObject
+ * @property {Array&lt;string>} tagsIdOrName Array of ids or names
+ * @property {string} field array=ids ? "_id" : "name"
+ * 
+ */
+/**
+ * Product
+ * @typedef {Object} Filter
+ * @property {string} _id Product_id
+ * @property {string} name Product_name
+ * @property {Number} price Product_price
+ * @property {Number} amount Product_amount
+ * @property {boolean} isAvailable Product_isAvailable
+ * @property {boolean} isRemove Product_isRemove
+ * @property {string} search Product_search
+ * @property {tagFilterObject} tags Product_tags
+ */
+/**
+ * Query Products
+ * @param {*} _
+ * @param {SecondParamFilters} param1 Filter and Count
+ * @param {{userId:string}} param2 Session
+ * @returns {Array&lt;object>} Products
+ */
+const products = async (_, { filter = {}, count = false }, { session }) => {
+  let query = { isRemove: false };
+  const { tags = {}, name } = filter;
+  const { tagsIdOrName, field } = tags;
+  let tagOrName = tagsIdOrName;
+  let tagFilterQuery = { $all: tagOrName };
+  if (tagsIdOrName &amp;&amp; tagsIdOrName.length > 0) {
+    if (field === "name" &amp;&amp; tagsIdOrName.length === 1) {
+      tagOrName = tagsIdOrName.pop();
+      tagFilterQuery = { $regex: tagOrName, $options: "i" };
+    }
+    query[`tags.${field}`] = tagFilterQuery;
+  }
+  if (name &amp;&amp; name.trim() !== "") query.name = { $regex: name, $options: "i" };
+  if (tagsIdOrName &amp;&amp; tagsIdOrName.length > 0 &amp;&amp; name)
+    query = { $or: [...query] };
+  try {
+    if (session?.rol &amp;&amp; session?.rol === "ADMIN") {
+      let product = Product.aggregate([]).match(query);
+      if (count) {
+        product.count("totalProducts");
+        return (await product.exec())[0]?.totalProducts ?? 0;
+      }
+
+      return await product;
+    } else {
+      throw new Error("No esta autorizado para ver los productos");
+    }
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+const productCount = async (_, { filter = {} }, session) => {
+  try {
+    return await products(_, { filter, count: true }, session);
+  } catch (e) {
+    console.error("\x1b[41m\x1b[30m%s\x1b[0m\x1b[0m", "e", e);
+    return e;
+  }
+};
+//----------------------------------MUTATIONS
+const productCreate = async (_, { data }, session) => {
+  const { name, price, amount, tags = [], image } = data;
+  try {
+    if (session?.rol &amp;&amp; session?.rol === "ADMIN") {
+      const tagAdd = [];
+      let urlImage;
+      if (image) {
+        const newImage = await Image_Save(image, "products");
+        urlImage = newImage.secure_url;
+      }
+      if (tags.length > 0) {
+        const oldTags = tags.filter((tag) => tag._id !== undefined);
+        const newTags = tags.filter((tag) => tag._id === undefined);
+        const newTagsAdd = await Promise.all(
+          newTags.map(async (newTag) => {
+            const data = newTag;
+            return await tagResolver.Mutation.tagSave(_, { data }, { session });
+          })
+        );
+        console.log(newTagsAdd);
+        tagAdd.push(...oldTags, ...newTagsAdd);
+      }
+      const newProduct = new Product({
+        _id: uuidv4(),
+        name,
+        price,
+        amount,
+        tags: tagAdd,
+        urlImage,
+      });
+      return await newProduct.save();
+    } else {
+      return false;
+    }
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+const productUpdate = async (_, { data }, session) => {
+  try {
+    const { _id, amount, name, price, tags, image } = data;
+    if (session?.rol &amp;&amp; session?.rol === "ADMIN") {
+      const update = { $set: {} };
+      if (image) {
+        const newImage = await Image_Save(image, "products");
+        update.$set.urlImage = newImage.secure_url;
+      }
+      if (amount >= 0) update.$set.amount = amount;
+      if (name) update.$set.name = name;
+      if (price) update.$set.price = price;
+      if (tags &amp;&amp; Array.isArray(tags) &amp;&amp; tags.length > 0)
+        update.$addToSet = { tags: { $each: tags } };
+
+      return await Product.findOneAndUpdate({ _id }, update);
+    } else {
+      return false;
+    }
+  } catch (error) {
+    return error;
+  }
+};
+const productSave = async (_, { data }, { session }) => {
+  const { _id } = data;
+  const options = {
+    create: productCreate,
+    update: productUpdate,
+  };
+  const option = _id ? "update" : "create";
+  return await options[option](_, { data }, session);
+};
+
+const Product_delete = async (_, { _id }) => {
+  try {
+    const product = await Product.findOne({ _id, isRemove: false });
+    if (!product) throw new Error("PRODUCT_NOT_FOUND");
+    if (product.urlImage !== "no-image") {
+      const publicId = product.urlImage.match(/\/v\d+\/(\w+\/\w+)\./)[1];
+      await cloudinary.uploader.destroy(publicId);
+    }
+    product.isRemove = true;
+    await product.save();
+    return true;
+  } catch (error) {
+    return error;
+  }
+};
+
+const DELETE_PRODUCTS = async (_, __, { session }) => {
+  try {
+    if (session?.rol &amp;&amp; session?.rol === "ADMIN") {
+      await Product.deleteMany({});
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const productResolver = {
+  Query: {
+    products,
+    productCount,
+  },
+  Mutation: {
+    productSave,
+    Product_delete,
+    DELETE_PRODUCTS,
+  },
+  Upload: GraphQLUpload,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#products">products</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Tue Sep 26 2023 11:19:56 GMT-0500 (hora estándar de Colombia)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
