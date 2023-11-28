@@ -5,7 +5,7 @@ const sizes = async (_, { filter = {}, count = false }, { session }) => {
   try {
     let query = { isRemove: false };
     if (filter) {
-      const { search } = filter;
+      const { search, categoryIds } = filter;
       for (let data in filter) {
         if (Object.hasOwnProperty.call(filter, data)) {
           let element = filter[data];
@@ -14,21 +14,22 @@ const sizes = async (_, { filter = {}, count = false }, { session }) => {
             data = "$or";
             element = [{ name: like }];
           }
+          if (data === "categoryIds"){
+            element = {$all:categoryIds}
+          }
           query[data] = element;
         }
       }
     }
     let size = Size.aggregate([]).match(query);
+
     size.lookup({
       from: 'categories',
-      localField: 'categoryId',
+      localField: 'categoryIds',
       foreignField: '_id',
-      as: 'category'
+      as: 'categories'
     })
-    .unwind({
-      path: "$category",
-      preserveNullAndEmptyArrays: true,
-    })
+
     if (count) {
       size.count("totalSizes");
       return (await size.exec())[0]?.totalSizes ?? 0;
@@ -48,14 +49,14 @@ const sizeCount = async (_, { filter = {} }, { session }) => {
 };
 //----------------------------------MUTATIONS
 const sizeCreate = async (_, { data }, session) => {
-  const { name, categoryId } = data;
+  const { name, categoryIds } = data;
   try {
     const existingSize = await Size.findOne({ name });
     if (existingSize) throw new Error("Ya existe una talla con este nombre");
     const newSize = new Size({
       _id: uuidv4(),
       name,
-      categoryId,
+      categoryIds,
     });
 
     return await newSize.save();
@@ -66,10 +67,10 @@ const sizeCreate = async (_, { data }, session) => {
 
 const sizeUpdate = async (_, { data }, session) => {
   try {
-    const { _id, name, categoryId } = data;
+    const { _id, name, categoryIds } = data;
     const update = { $set: {} };
     if (name) update.$set.name = name;
-    if (categoryId) update.$set.categoryId = categoryId;
+    if (categoryIds.length > 0 && Array.isArray(categoryIds)) update.$set.categoryId = categoryIds;
 
     return await Size.findOneAndUpdate({ _id }, update);
   } catch (error) {

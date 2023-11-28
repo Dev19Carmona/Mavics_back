@@ -5,17 +5,18 @@ export const sizeTypeDef = gql`
     _id: String
     name: String
     isRemove: Boolean
-    category: Category
+    categories: [Category]
   }
   input sizeData {
     _id: String
     name: String!
-    categoryId: String!
+    categoryIds: [String]!
     isRemove: Boolean
   }
   input sizeFilter {
     _id: String
     search: String
+    categoryIds: [String]
   }
 
   type Query {

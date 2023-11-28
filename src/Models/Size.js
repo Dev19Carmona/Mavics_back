@@ -5,7 +5,7 @@ const Schema = new mongoose.Schema(
   {
     _id: { type: String },
     name: { type: String, require: true },
-    categoryId: { type: String, require: true },
+    categoryIds: { type: Array, require: true },
     isRemove: { type: Boolean, default: false },
   },
   {

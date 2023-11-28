@@ -5,6 +5,7 @@ const Schema = new mongoose.Schema(
   {
     _id: { type: String },
     name: { type: String, require: true },
+    description: { type: String, default: 'no_description' },
     urlImage: { type: String, default: "no_image" },
     price: { type: Number, require: true },
     amount: { type: Number, require: true },

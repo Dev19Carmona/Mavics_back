@@ -30,12 +30,15 @@ export const productTypeDef = gql`
   input productData {
     _id: String
     name: String
+    description: String
+    image: Upload
     price: Float
     amount: Int
-    image: Upload
-    tags: [tagData]
-    isRemove: Boolean
     supplierId: String
+    categoryId: String
+    sizeId: String
+    gender: String
+    isRemove: Boolean
   }
 
   type Query {

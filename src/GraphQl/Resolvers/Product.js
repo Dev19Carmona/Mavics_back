@@ -75,49 +75,29 @@ const productCount = async (_, { filter, count = true }, { session }) => {
  * @returns {Promise<Product|boolean>} Product
  */
 const productCreate = async (_, { data }, session) => {
-  const { name, price, amount, tags = [], image, supplierId } = data;
+  
   try {
-    if (session?.rol && session?.rol === userTypes.admin.key) {
-      const tagAdd = [];
+    const { name, description, price, amount, image, supplierId, categoryId, sizeId, gender } =
+      data;
       let urlImage;
       if (image) {
         const newImage = await Image_Save(image, "products");
         urlImage = newImage.secure_url;
       }
-      if (tags.length > 0) {
-        const oldTags = tags.filter((tag) => tag._id !== undefined);
-        const newTags = tags.filter((tag) => tag._id === undefined);
-        const newTagsAdd = await Promise.all(
-          newTags.map(async (newTag) => {
-            const data = newTag;
-            return await tagResolver.Mutation.tagSave(_, { data }, { session });
-          })
-        );
-        tagAdd.push(...oldTags, ...newTagsAdd);
-      }
-      const productObject = {
-        _id: "",
-        name: "",
-        price: 0,
-        amount: 0,
-        isRemove: false,
-        isAvailable: true,
-        tags: [{ _id: "", name: "" }],
-        urlImage: "",
-      };
+
       const newProduct = new Product({
         _id: uuidv4(),
         name,
+        description,
+        urlImage,
         price,
         amount,
-        tags: tagAdd,
-        urlImage,
         supplierId,
+        categoryId,
+        sizeId,
+        gender,
       });
       return await newProduct.save();
-    } else {
-      return false;
-    }
   } catch (error) {
     throw new Error(error);
   }
@@ -163,12 +143,11 @@ const productUpdate = async (_, { data }, session) => {
  * @returns {Promise<Product|boolean>} Product
  */
 const productSave = async (_, { data }, { session }) => {
-  const { _id } = data;
   const options = {
     create: productCreate,
     update: productUpdate,
   };
-  const option = _id ? "update" : "create";
+  const option = data._id ? "update" : "create";
   return await options[option](_, { data }, session);
 };
 /**
