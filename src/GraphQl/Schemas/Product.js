@@ -6,7 +6,6 @@ export const productTypeDef = gql`
     _id: String
     name: String
     price: Float
-    amount: Int
     isRemove: Boolean
     isAvailable: Boolean
     createdAt: String
@@ -15,13 +14,21 @@ export const productTypeDef = gql`
     urlImage: String
     supplierId: String
     supplier: Supplier
+    sizes: [productSize]
+  }
+  type productSize {
+    sizeId: String
+    amount: Int
+  }
+  input productSize_Input {
+    sizeId: String
+    amount: Int
   }
 
   input productFilter {
     _id: String
     name: String
     price: Float
-    amount: Int
     isAvailable: Boolean
     isRemove: Boolean
     search: String
@@ -33,10 +40,9 @@ export const productTypeDef = gql`
     description: String
     image: Upload
     price: Float
-    amount: Int
     supplierId: String
     categoryId: String
-    sizeId: String
+    sizes: [productSize_Input]
     gender: String
     isRemove: Boolean
   }

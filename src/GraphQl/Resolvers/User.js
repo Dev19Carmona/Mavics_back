@@ -9,7 +9,6 @@ import { hashedPassword, jwtSign } from "../../Constants/_general.js";
 //----------------------------------QUERIES
 const me = async (_, __, { session }) => {
   try {
-    console.log(session);
     if (session) {
       return session;
     } else {
@@ -121,7 +120,6 @@ const userRecoveryPassword = async (_, { email } ) =>{
   const user = await User.findOne({email},{_id:1,username:1,email:1}).lean()
   const token = jwtSign(user,{expiresIn: '10m'})
   user.resetToken = token;
-  console.log(token);
   return {name:true}
   } catch (error) {
     return error

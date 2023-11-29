@@ -77,7 +77,7 @@ const productCount = async (_, { filter, count = true }, { session }) => {
 const productCreate = async (_, { data }, session) => {
   
   try {
-    const { name, description, price, amount, image, supplierId, categoryId, sizeId, gender } =
+    const { name, description, price, image, supplierId, categoryId, sizes = [], gender } =
       data;
       let urlImage;
       if (image) {
@@ -91,10 +91,9 @@ const productCreate = async (_, { data }, session) => {
         description,
         urlImage,
         price,
-        amount,
         supplierId,
         categoryId,
-        sizeId,
+        sizes,
         gender,
       });
       return await newProduct.save();
