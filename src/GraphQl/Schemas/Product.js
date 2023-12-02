@@ -5,6 +5,7 @@ export const productTypeDef = gql`
   type Product {
     _id: String
     name: String
+    description: String
     price: Float
     isRemove: Boolean
     isAvailable: Boolean
@@ -17,11 +18,11 @@ export const productTypeDef = gql`
     sizes: [productSize]
   }
   type productSize {
-    sizeId: String
+    _id: String
     amount: Int
   }
   input productSize_Input {
-    sizeId: String
+    _id: String
     amount: Int
   }
 

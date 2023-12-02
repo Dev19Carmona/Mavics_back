@@ -23,23 +23,23 @@ const Schema = new mongoose.Schema(
   }
 );
 
-Schema.pre("save", function (next) {
-  if (this.amount > 0) {
-    this.isAvailable = true;
-  } else {
-    this.isAvailable = false;
-  }
-  next();
-});
+// Schema.pre("save", function (next) {
+//   if (this.amount > 0) {
+//     this.isAvailable = true;
+//   } else {
+//     this.isAvailable = false;
+//   }
+//   next();
+// });
 
-Schema.pre("findOneAndUpdate", function (next) {
-  const updateData = this.getUpdate();
-  if (updateData.$set.amount > 0) {
-    updateData.$set.isAvailable = true;
-  } else {
-    updateData.$set.isAvailable = false;
-  }
-  next();
-});
+// Schema.pre("findOneAndUpdate", function (next) {
+//   const updateData = this.getUpdate();
+//   if (updateData.$set.amount > 0) {
+//     updateData.$set.isAvailable = true;
+//   } else {
+//     updateData.$set.isAvailable = false;
+//   }
+//   next();
+// });
 
 export default mongoose.model(collectionName, Schema);

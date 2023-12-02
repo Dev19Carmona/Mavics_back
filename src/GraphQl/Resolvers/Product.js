@@ -84,7 +84,7 @@ const productCreate = async (_, { data }, session) => {
         const newImage = await Image_Save(image, "products");
         urlImage = newImage.secure_url;
       }
-
+      
       const newProduct = new Product({
         _id: uuidv4(),
         name,
@@ -112,7 +112,7 @@ const productCreate = async (_, { data }, session) => {
 
 const productUpdate = async (_, { data }, session) => {
   try {
-    const { _id, amount, name, price, tags, image, supplierId } = data;
+    const { _id, name, price, tags, image, supplierId } = data;
     if (session?.rol && session?.rol === userTypes.admin.key) {
       const update = { $set: {} };
       if (image) {
