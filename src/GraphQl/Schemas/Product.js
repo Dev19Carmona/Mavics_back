@@ -20,10 +20,12 @@ export const productTypeDef = gql`
   type productSize {
     _id: String
     amount: Int
+    name: String
   }
   input productSize_Input {
     _id: String
     amount: Int
+    name: String
   }
 
   input productFilter {
