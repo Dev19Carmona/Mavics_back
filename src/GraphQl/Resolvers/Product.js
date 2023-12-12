@@ -112,14 +112,15 @@ const productCreate = async (_, { data }, session) => {
 
 const productUpdate = async (_, { data }, session) => {
   try {
-    const { _id, name, price, tags, image, supplierId } = data
+    const { _id, name, description, price, tags, image, supplierId, gender } = data
     const update = { $set: {} }
     if (image) {
       const newImage = await Image_Save(image, 'products')
       update.$set.urlImage = newImage.secure_url
     }
-    if (amount) update.$set.amount = amount
     if (name) update.$set.name = name
+    if (gender) update.$set.gender = gender
+    if (description) update.$set.description = description
     if (price) update.$set.price = price
     if (supplierId) update.$set.supplierId = supplierId
     if (tags && Array.isArray(tags) && tags.length > 0)

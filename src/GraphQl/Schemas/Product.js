@@ -16,6 +16,7 @@ export const productTypeDef = gql`
     supplierId: String
     supplier: Supplier
     sizes: [productSize]
+    gender:String
   }
   type productSize {
     _id: String
