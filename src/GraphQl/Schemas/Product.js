@@ -5,6 +5,7 @@ export const productTypeDef = gql`
   type Product {
     _id: String
     name: String
+    gender:String
     description: String
     price: Float
     isRemove: Boolean
