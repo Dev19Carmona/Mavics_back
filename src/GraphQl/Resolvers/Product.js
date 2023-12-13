@@ -112,28 +112,25 @@ const productCreate = async (_, { data }, session) => {
 
 const productUpdate = async (_, { data }, session) => {
   try {
-    const { _id, name, price, tags, image, supplierId } = data;
-    if (session?.rol && session?.rol === userTypes.admin.key) {
-      const update = { $set: {} };
-      if (image) {
-        const newImage = await Image_Save(image, "products");
-        update.$set.urlImage = newImage.secure_url;
-      }
-      if (amount) update.$set.amount = amount;
-      if (name) update.$set.name = name;
-      if (price) update.$set.price = price;
-      if (supplierId) update.$set.supplierId = supplierId;
-      if (tags && Array.isArray(tags) && tags.length > 0)
-        update.$addToSet = { tags: { $each: tags } };
-
-      return await Product.findOneAndUpdate({ _id }, update);
-    } else {
-      return false;
+    const { _id, name, description, price, tags, image, supplierId, gender } = data
+    const update = { $set: {} }
+    if (image) {
+      const newImage = await Image_Save(image, 'products')
+      update.$set.urlImage = newImage.secure_url
     }
+    if (name) update.$set.name = name
+    if (gender) update.$set.gender = gender
+    if (description) update.$set.description = description
+    if (price) update.$set.price = price
+    if (supplierId) update.$set.supplierId = supplierId
+    if (tags && Array.isArray(tags) && tags.length > 0)
+      update.$addToSet = { tags: { $each: tags } }
+
+    return await Product.findOneAndUpdate({ _id }, update)
   } catch (error) {
-    return error;
+    return error
   }
-};
+}
 /**
  *
  * @param {*} _ Parent
@@ -156,10 +153,11 @@ const productSave = async (_, { data }, { session }) => {
  * @returns {Promise<boolean>}  True or False
  */
 const Product_delete = async (_, { _id }) => {
-  try {
+  try { 
     const product = await Product.findOne({ _id, isRemove: false });
+    
     if (!product) throw new Error("PRODUCT_NOT_FOUND");
-    if (product.urlImage !== "no-image") {
+    if (product.urlImage !== "no_image") {
       const publicId = product.urlImage.match(/\/v\d+\/(\w+\/\w+)\./)[1];
       await cloudinary.uploader.destroy(publicId);
     }
