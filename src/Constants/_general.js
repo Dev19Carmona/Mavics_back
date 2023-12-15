@@ -29,3 +29,37 @@ export const jwtSign = (payload, options = {}) =>
   })
 
 export const jwtVerify = (token) =>jwt.verify(token, process.env.SECRET_JWT)
+
+export const handlePagination = (params = {}, type, options = {}) => {
+
+  let pagination = {}
+  console.log(params, type, options);
+  const { defaultLimit = 20 } = options
+
+  switch (type) {
+
+    case 'neo':
+    case 'neo4j':
+      const { first = defaultLimit, offset = 0 } = params
+      pagination = {
+        first,
+        offset
+      }
+      break
+
+    default:
+      const { page, limit } = params
+      let paging = page ?
+                   page - 1 :
+                   0
+
+      pagination = {
+        skip: paging * limit,
+        limit
+      }
+      break
+  }
+
+  return pagination
+
+}
