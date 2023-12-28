@@ -49,6 +49,7 @@ export const productTypeDef = gql`
     sizes: [productSize_Input]
     gender: String
     isRemove: Boolean
+    barcode: String
   }
 
   type Query {

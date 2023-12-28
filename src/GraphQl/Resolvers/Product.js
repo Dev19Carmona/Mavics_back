@@ -4,7 +4,6 @@
 import Product from "../../Models/Product.js";
 import { v4 as uuidv4 } from "uuid";
 import GraphQLUpload from "graphql-upload/GraphQLUpload.mjs";
-import { tagResolver } from "./Tag.js";
 import { Image_Save } from "../../../config/imageSave.js";
 import cloudinary from "cloudinary";
 import { allUsers, userTypes } from "../../Constants/_general.js";
@@ -20,7 +19,7 @@ const products = async (_, { filter = {}, count = false }, { session }) => {
   try {
     if (session?.rol && !allUsers().includes(session?.rol))
       throw new Error("YOU_CANT_SEE_PRODUCTS");
-    const { name } = filter;
+    const { name, _id } = filter;
     /**
      * @type{Product_QueryObject}
      */
@@ -30,6 +29,7 @@ const products = async (_, { filter = {}, count = false }, { session }) => {
       const { name } = filter;
       query.name = { $regex: name, $options: "i" };
     }
+    if(_id)query._id = _id
 
     let product = Product.aggregate([])
       .match(query)
@@ -75,10 +75,11 @@ const productCount = async (_, { filter, count = true }, { session }) => {
  * @returns {Promise<Product|boolean>} Product
  */
 const productCreate = async (_, { data }, session) => {
-  
   try {
-    const { name, description, price, image, supplierId, categoryId, sizes = [], gender } =
+
+    const { name, description, price, image, supplierId, categoryId, sizes = [], gender, barcode } =
       data;
+
       let urlImage;
       if (image) {
         const newImage = await Image_Save(image, "products");
@@ -86,7 +87,7 @@ const productCreate = async (_, { data }, session) => {
       }
       
       const newProduct = new Product({
-        _id: uuidv4(),
+        _id: barcode ? barcode : uuidv4(),
         name,
         description,
         urlImage,
@@ -139,12 +140,23 @@ const productUpdate = async (_, { data }, session) => {
  * @returns {Promise<Product|boolean>} Product
  */
 const productSave = async (_, { data }, { session }) => {
+  try {
+    let product = null;
+  if (data?.barcode) {
+    product = await Product.findOne({_id: data?.barcode})
+    if(product)data._id = product._id
+  }
   const options = {
     create: productCreate,
     update: productUpdate,
   };
-  const option = data._id ? "update" : "create";
+
+  const option = data._id || product ? "update" : "create";
   return await options[option](_, { data }, session);
+  } catch (error) {
+   console.log(error); 
+   return error
+  }
 };
 /**
  *
